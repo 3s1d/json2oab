@@ -2,7 +2,7 @@
  * oab.hpp
  *
  *  Created on: Aug 11, 2018
- *      Author: sid
+ *      Author: sid, Stefan Seifert
  */
 
 #ifndef SRC_OAB_HPP_
@@ -16,7 +16,7 @@
 /*
  * Format:
  * 3byte char      'OAB'
- * 1byte uint8_t   version number, currently 1
+ * 1byte uint8_t   version number, currently 2
  * 8byte time_t	   built time
  *
  * Airspace:

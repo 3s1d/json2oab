@@ -1,8 +1,14 @@
-﻿#include "kmlcreator.h"
-#include <iostream>
+﻿/*
+ * kmlcreator.cpp
+ *
+ *  Created on: Mai 13, 2019
+ *      Author: Stefan Seifert
+ */
+
+#include "kmlcreator.h"
 #include <fstream>
 #include <string>
-#include "kml/dom.h"
+#include <kml/dom.h>
 #include <zlib.h>
 
 void KmlCreator::CreateStyle(std::string airClass, const char lineABGR[], const char polyABGR[])

@@ -2,7 +2,7 @@
  * json2oab.cpp
  *
  *  Created on: May 3, 2019
- *      Author: xoration
+ *      Author: Stefan Seifert
  */
 
 

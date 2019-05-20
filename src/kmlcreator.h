@@ -1,4 +1,11 @@
-﻿#pragma once
+﻿/*
+ * kmlcreator.hpp
+ *
+ *  Created on: Mai 13, 2019
+ *      Author: Stefan Seifert
+ */
+
+#pragma once
 #include "kml/dom.h"
 #include "oab.hpp"
 #include <rapidjson/document.h>

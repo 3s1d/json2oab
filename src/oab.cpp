@@ -2,7 +2,7 @@
  * oab.cpp
  *
  *  Created on: Aug 11, 2018
- *      Author: sid, xoration
+ *      Author: sid, Stefan Seifert
  */
 
 #define _USE_MATH_DEFINES
