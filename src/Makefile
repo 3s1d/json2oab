@@ -9,4 +9,10 @@ all: $(OBJS)
         $(CXX) -o $(BUILDDIR)/$(PROG) -I/usr/include $(OBJS) $(LDFLAGS)
 
 clean:
-                rm -rf *.o $(BUILDDIR)
+        rm -rf *.o $(BUILDDIR)
+
+install:
+        cp $< build/json2oab /usr/local/bin
+
+uninstall:
+        rm -f /usr/local/bin/json2oab
