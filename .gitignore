@@ -37,6 +37,7 @@ Debug
 Release
 *.filters
 *.user
+*.licenseheader
 
 # VSCode
 .vscode

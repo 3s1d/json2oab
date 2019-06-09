@@ -5,19 +5,19 @@
  *      Author: Stefan Seifert
  */
 
-#include "jsonparser.h"
 #include <cassert>
 #include <rapidjson/document.h>
 #include <rapidjson/istreamwrapper.h>
 #include <boost/filesystem/fstream.hpp>
-#include "boost/date_time.hpp"
+#include <boost/regex.hpp>
+#include <boost/date_time.hpp>
 #include <iostream>
 #include <sstream>
 #include <locale>
-#include "activationtime.h"
 #include <ctime>
+#include "jsonparser.h"
+#include "activationtime.h"
 #include "kmlcreator.h"
-#include "boost/regex.hpp"
 
 
 JsonParser::JsonParser()
@@ -48,12 +48,14 @@ void JsonParser::Parse(std::string fileName)
 
 			if (airspaceName.find("NOTAM") != string::npos)
 			{
+				std::cout << "Found Notam skipping: " << airspaceName << std::endl;
 				continue;
 			}
 
-			if (airspaceName.find("PARA Dinkelsbuehl") != string::npos)
+			if (boost::starts_with(airspaceName, "FIS"))
 			{
-				std::cout << "found you";
+				std::cout << "Found FIS skipping: " << airspaceName << std::endl;
+				continue;
 			}
 
 			if (airspace.HasMember("descriptions"))
@@ -66,9 +68,10 @@ void JsonParser::Parse(std::string fileName)
 
 						if (boost::regex_match(airDescription, notamExpr))
 						{
-							std::cout << "Found Notam skipping" << std::endl;
+							std::cout << "Found Notam skipping: " << airspaceName << std::endl;
 							continue;
 						}
+
 					}
 				}
 			}
@@ -354,7 +357,7 @@ bool JsonParser::WriteOba(std::string fileName)
 
 	myFile.close();
 
-	std::cout << "Written " << airspaces.size() << " airspaces" << std::endl;
+	std::cout << "Written " << airspaces.size() << " airspaces to kml" << std::endl;
 
 	return true;
 }

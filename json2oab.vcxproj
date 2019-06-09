@@ -141,6 +141,9 @@
     <ClInclude Include="src\kmlcreator.h" />
     <ClInclude Include="src\oab.hpp" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="json2oab.licenseheader" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
