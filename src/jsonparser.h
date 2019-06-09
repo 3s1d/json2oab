@@ -18,7 +18,7 @@ private:
 	std::vector<OAB> airspaces;
 	std::vector<Coord> tempPolygoneCoordinates;
 	enum AirspaceLimit {UpperLimit, LowerLimit};
-	boost::regex notamExpr{ ".+/\d+\s*NOTAM" };
+	boost::regex notamExpr{ ".+/\\d+\\s*NOTAM" };
 
 	time_t ParseTime(std::string& time);
 

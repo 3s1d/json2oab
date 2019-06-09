@@ -5,14 +5,14 @@ LDFLAGS=-lboost_system -lboost_filesystem -lexpat -lboost_iostreams -lboost_rege
 OBJS=activationtime.o coord.o json2oab.o jsonparser.o kmlcreator.o oab.o
 
 all: $(OBJS)
-        mkdir -p $(BUILDDIR)
-        $(CXX) -o $(BUILDDIR)/$(PROG) -I/usr/include $(OBJS) $(LDFLAGS)
+	mkdir -p $(BUILDDIR)
+	$(CXX) -o $(BUILDDIR)/$(PROG) -I/usr/include $(OBJS) $(LDFLAGS)
 
 clean:
-        rm -rf *.o $(BUILDDIR)
+	rm -rf *.o $(BUILDDIR)
 
 install:
-        cp $< build/json2oab /usr/local/bin
+	cp $< build/json2oab /usr/local/bin
 
 uninstall:
-        rm -f /usr/local/bin/json2oab
+	rm -f /usr/local/bin/json2oab
