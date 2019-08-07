@@ -46,7 +46,7 @@ void JsonParser::Parse(std::string fileName)
 			OAB tempSpace;
 			std::string airspaceName = airspace["name"].GetString();
 
-			if (airspaceName.find("NOTAM") != string::npos)
+			if (airspaceName.find("NOTAM") != std::string::npos)
 			{
 				std::cout << "Found Notam skipping: " << airspaceName << std::endl;
 				continue;
@@ -64,7 +64,7 @@ void JsonParser::Parse(std::string fileName)
 				{
 					if (description.HasMember("airdescription"))
 					{
-						string airDescription = description["airdescription"].GetString();
+						std::string airDescription = description["airdescription"].GetString();
 
 						if (boost::regex_match(airDescription, notamExpr))
 						{
@@ -87,8 +87,9 @@ void JsonParser::Parse(std::string fileName)
 			if (tempSpace.header.type == OAB::IGNORE)
 				continue;
 
+			
 			kmlCreator.AddAirspace(document["channame"].GetString(),
-				document["description"].GetString(),
+				document["description"].IsNull() ? "" : document["description"].GetString(),
 				airspace,
 				tempPolygoneCoordinates, 
 				lowerAltitude / 3.2808,
