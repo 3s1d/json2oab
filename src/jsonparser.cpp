@@ -39,7 +39,7 @@ void JsonParser::Parse(std::string fileName)
 	document.ParseStream(isw);
 
 	if (document.HasMember("channame")) {
-		assert(document.HasMember("channame"));
+		
 		printf("Parsing: %s\n", document["channame"].GetString());
 
 		for (auto& airspace : document["airspaces"].GetArray()) {
@@ -71,7 +71,6 @@ void JsonParser::Parse(std::string fileName)
 							std::cout << "Found Notam skipping: " << airspaceName << std::endl;
 							continue;
 						}
-
 					}
 				}
 			}
