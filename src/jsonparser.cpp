@@ -42,19 +42,24 @@ void JsonParser::Parse(std::string fileName)
 		
 		printf("Parsing: %s\n", document["channame"].GetString());
 
+		
 		for (auto& airspace : document["airspaces"].GetArray()) {
+			bool skipAirspace = false;
+			
 			OAB tempSpace;
 			std::string airspaceName = airspace["name"].GetString();
 
 			if (airspaceName.find("NOTAM") != std::string::npos)
 			{
 				std::cout << "Found Notam skipping: " << airspaceName << std::endl;
+				skipAirspace = true;
 				continue;
 			}
 
 			if (boost::starts_with(airspaceName, "FIS"))
 			{
 				std::cout << "Found FIS skipping: " << airspaceName << std::endl;
+				skipAirspace = true;
 				continue;
 			}
 
@@ -69,11 +74,18 @@ void JsonParser::Parse(std::string fileName)
 						if (boost::regex_match(airDescription, notamExpr))
 						{
 							std::cout << "Found Notam skipping: " << airspaceName << std::endl;
-							continue;
+							skipAirspace = true;
+							break;
 						}
 					}
 				}
 			}
+
+			if (skipAirspace)
+			{
+				continue;
+			}
+
 
 			tempSpace.header.type = OAB::UNDEFINED;
 			SetAirspaceName(tempSpace, airspace);

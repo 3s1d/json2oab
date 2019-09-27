@@ -50,7 +50,6 @@ int main(int argc, char* argv[])
 
 	JsonParser jsonAirspaceParser;
 
-	//for (auto& file : boost::make_iterator_range(boost::filesystem::directory_iterator(jsonDirectory), {}))
 	for(const auto& file : files)
 	{
 		if(!boost::iends_with(file, ".json"))
