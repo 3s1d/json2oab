@@ -134,7 +134,12 @@ void JsonParser::SetAirspaceClass(OAB & tempAirspace, rapidjson::Value& airspace
 		else if (airspace["airclass"] == "G")
 			tempAirspace.header.type = OAB::IGNORE; //ignore
 		else if (airspace["airclass"] == "P")
-			tempAirspace.header.type = OAB::PROHIBITED;
+			if (airspace["airchecktype"] == "ignore") {
+				tempAirspace.header.type = OAB::IGNORE; //ignore
+			}
+			else {
+				tempAirspace.header.type = OAB::PROHIBITED;
+			}
 		else if (airspace["airclass"] == "Q")
 			tempAirspace.header.type = OAB::DANGER;
 		else if (airspace["airclass"] == "R") // Restricted
