@@ -81,6 +81,13 @@ void JsonParser::Parse(std::string fileName)
 				}
 			}
 
+			if(airspaceName == "AUSTRIAN BORDER")
+			{
+                                std::cout << "Found AT border skipping: " << airspaceName << std::endl;
+                                skipAirspace = true;
+                                continue;
+			}
+
 			if (skipAirspace)
 			{
 				continue;
