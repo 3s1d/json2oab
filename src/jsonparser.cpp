@@ -170,7 +170,7 @@ void JsonParser::SetAirspaceClass(OAB & tempAirspace, rapidjson::Value& airspace
 		else if (airspace["airclass"] == "LZ")		//XContest Airspaces Ignore
 			tempAirspace.header.type = OAB::IGNORE;
 		else if (airspace["airclass"] == "GP")
-			tempAirspace.header.type = OAB::IGNORE;
+			tempAirspace.header.type = OAB::PROHIBITED;
 		else if (airspace["airclass"] == "W")
 			tempAirspace.header.type = OAB::IGNORE;
 		else if (airspace["airclass"] == "E2")
