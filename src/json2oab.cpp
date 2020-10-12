@@ -64,7 +64,7 @@ int main(int argc, char* argv[])
 		jsonAirspaceParser.Parse(pathToFile.string());
 	}
 
-	jsonAirspaceParser.WriteOba("world.oab");
+	jsonAirspaceParser.WriteOab("world.oab");
 
 	return 0;
 }

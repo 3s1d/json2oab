@@ -46,6 +46,17 @@ void JsonParser::Parse(std::string fileName)
 		for (auto& airspace : document["airspaces"].GetArray()) {
 			bool skipAirspace = false;
 			
+			if (boost::iequals(document["channame"].GetString(), "Switzerland")) {
+				if (airspace.HasMember("airchecktype"))
+				{
+					if (boost::iequals(airspace["airchecktype"].GetString(), "ignore")) {
+
+						std::cout << "Switzerland: " << airspace["name"].GetString() << "IGNORE." << std::endl;
+						continue;
+					}
+				}
+			}
+			
 			OAB tempSpace;
 			std::string airspaceName = airspace["name"].GetString();
 
@@ -90,8 +101,8 @@ void JsonParser::Parse(std::string fileName)
 			tempSpace.header.type = OAB::UNDEFINED;
 			SetAirspaceName(tempSpace, airspace);
 			SetAirspaceClass(tempSpace, airspace);
-			double lowerAltitude = SetAirspaceLimits(tempSpace, airspace, LowerLimit);
-			double upperAltitude = SetAirspaceLimits(tempSpace, airspace, UpperLimit);
+			double lowerAltitude = SetAirspaceLimits(tempSpace, airspace, AirspaceLimit::LowerLimit);
+			double upperAltitude = SetAirspaceLimits(tempSpace, airspace, AirspaceLimit::UpperLimit);
 			SetAirspacePolygons(tempSpace, airspace["polygon"]);
 			SetAirspceActivations(tempSpace, airspace);
 
@@ -229,10 +240,10 @@ double JsonParser::SetAirspaceLimits(OAB & tempAirspace, rapidjson::Value & airs
 	std::string jsonLimit;
 
 	switch (limit) {
-	case UpperLimit:
+	case AirspaceLimit::UpperLimit:
 		jsonLimit = "upperLimit";
 		break;
-	case LowerLimit:
+	case AirspaceLimit::LowerLimit:
 		jsonLimit = "lowerLimit";
 		break;
 	default:
@@ -271,11 +282,11 @@ double JsonParser::SetAirspaceLimits(OAB & tempAirspace, rapidjson::Value & airs
 		}
 
 		switch (limit) {
-		case UpperLimit:
+		case AirspaceLimit::UpperLimit:
 			tempAirspace.header.flags |= altref << OAB_ALTREF_TOP_OFFSET;
 			tempAirspace.header.altitudeTop_ft = altitudeFt;
 			break;
-		case LowerLimit:
+		case AirspaceLimit::LowerLimit:
 			tempAirspace.header.flags |= altref << OAB_ALTREF_BOTTOM_OFFSET;
 			tempAirspace.header.altitudeBottom_ft = altitudeFt;
 			break;
@@ -361,7 +372,7 @@ time_t JsonParser::ParseTime(std::string & time)
 }
 
 
-bool JsonParser::WriteOba(std::string fileName)
+bool JsonParser::WriteOab(std::string fileName)
 {
 	kmlCreator.CreateKml("world.oab.kml");
 
