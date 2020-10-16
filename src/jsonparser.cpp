@@ -206,7 +206,7 @@ void JsonParser::SetAirspaceClass(OAB & tempAirspace, rapidjson::Value& airspace
 			tempAirspace.header.type = OAB::IGNORE;
 		else if (airspace["airclass"] == "EmgyLZ")
 			tempAirspace.header.type = OAB::IGNORE;
-		else if (airspace["airclass"] == "ZMS")
+		else if (airspace["airclass"] == "ZSM")
 			tempAirspace.header.type = OAB::RESTRICTED;
 		else
 		{
