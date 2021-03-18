@@ -433,8 +433,13 @@ bool JsonParser::WriteOab(std::string fileName, std::ofstream *otbStream)
 	else
 		std::cout<< "(continued)" << std::endl;
 
+	/* sort airspaces */
+	sort(airspaces.begin(), airspaces.end(), [](const OAB &lhs, const OAB &rhs) { return lhs.header.airid < rhs.header.airid; });
+
+	/* write airspaces */
 	for (auto airspace : airspaces)
 	{
+		std::cout << airspace.header.airid << std::endl;
 		airspace.write(myFile, otbStream == nullptr);
 		if(otbStream != nullptr)
 			airspace.writeActivations(otbStream);
