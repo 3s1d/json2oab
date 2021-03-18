@@ -439,7 +439,6 @@ bool JsonParser::WriteOab(std::string fileName, std::ofstream *otbStream)
 	/* write airspaces */
 	for (auto airspace : airspaces)
 	{
-		std::cout << airspace.header.airid << std::endl;
 		airspace.write(myFile, otbStream == nullptr);
 		if(otbStream != nullptr)
 			airspace.writeActivations(otbStream);
