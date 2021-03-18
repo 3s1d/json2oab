@@ -13,9 +13,11 @@
 #include <cstring>
 #include <time.h>
 
+#include "otb.hpp"
 #include "oab.hpp"
 
-const char *OAB::id = "OAB\x2";
+
+const char *OAB::id = "OAB\x3";
 
 Coord proj_deg(Coord &src, Coord &poi)
 {
@@ -76,10 +78,10 @@ void OAB::writeFileHeader(std::ofstream& file, time_t buildTime)
 	file.write((char*)& buildTime, sizeof(time_t));
 }
 
-void OAB::write(std::ofstream &file)
+void OAB::write(std::ofstream &file, bool includeActivations)
 {
 	/* finalize header */
-	finalize();
+	finalize(includeActivations);
 
 	/* write header */
 	file.write((char *) &header, sizeof(oab_header_t));
@@ -90,12 +92,28 @@ void OAB::write(std::ofstream &file)
 	}
 
 	/* write activation times */
-	for(auto activationTime : activationTimes) {
-		file.write((char *)& activationTime, sizeof(oab_activationTimes_t));
+	if(includeActivations)
+	{
+		for(auto activationTime : activationTimes)
+			file.write((char *)& activationTime, sizeof(oab_activationTimes_t));
 	}
 }
 
-void OAB::finalize(void)
+void OAB::writeActivations(std::ofstream *file)
+{
+	if(activationTimes.size() == 0)
+		return;
+
+	/* header */
+	OTB otb = OTB(header.airid, activationTimes.size());
+	otb.writeHeader(file);
+
+	/* activation times */
+	for(auto activationTime : activationTimes)
+		file->write((char *)& activationTime, sizeof(oab_activationTimes_t));
+}
+
+void OAB::finalize(bool includeActivationTimes)
 {
 	/* complete polygon */
 	if(last_ign)
@@ -136,7 +154,10 @@ void OAB::finalize(void)
 			header.rightLon_rad = poly.lon_rad;
 	}
 
-	header.numberOfActivationTimes = activationTimes.size();
+	if(includeActivationTimes == true)
+		header.flags |= (activationTimes.size() & OAB_NUMACIVATIONS_MASK) << OAB_NUMACIVATIONS;
+	else if(activationTimes.size() > 0)
+		header.flags |= OAB_NUMACIVATIONS_MASK << OAB_NUMACIVATIONS;			//indicate external file
 }
 
 void OAB::add(Coord &coord)

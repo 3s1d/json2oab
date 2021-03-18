@@ -15,6 +15,7 @@
 #include <sstream>
 #include <locale>
 #include <ctime>
+#include <sys/stat.h>
 #include "jsonparser.h"
 #include "activationtime.h"
 #include "kmlcreator.h"
@@ -42,6 +43,16 @@ void JsonParser::Parse(std::string fileName)
 		
 		printf("Parsing: %s\n", document["channame"].GetString());
 
+		if(document.HasMember("isocode"))
+		{
+			if(std::strcmp(document["isocode"].GetString(), "CG") == 0)
+			{
+				std::cout << "Dropping " << fileName << std::endl;
+				return;
+			}
+
+			lastIsoCode = document["isocode"].GetString();
+		}
 		
 		for (auto& airspace : document["airspaces"].GetArray()) {
 			bool skipAirspace = false;
@@ -104,6 +115,11 @@ void JsonParser::Parse(std::string fileName)
 				continue;
 			}
 
+			/* Air ID */
+			if (airspace.HasMember("airid"))
+				tempSpace.header.airid = airspace["airid"].GetUint();
+			else
+				tempSpace.header.airid = 0;
 
 			tempSpace.header.type = OAB::UNDEFINED;
 			SetAirspaceName(tempSpace, airspace);
@@ -380,21 +396,56 @@ time_t JsonParser::ParseTime(std::string & time)
 	return posixTimeUTC;
 }
 
-
-bool JsonParser::WriteOab(std::string fileName)
+/*
+ * Case Sensitive Implementation of endsWith()
+ * It checks if the string 'mainStr' ends with given string 'toMatch'
+ */
+bool endsWith(const std::string &mainStr, const std::string &toMatch)
 {
-	kmlCreator.CreateKml("world.oab.kml");
+    if(mainStr.size() >= toMatch.size() &&
+            mainStr.compare(mainStr.size() - toMatch.size(), toMatch.size(), toMatch) == 0)
+            return true;
+        else
+            return false;
+}
 
-	std::ofstream myFile(fileName, std::ios::out | std::ios::binary);
+bool JsonParser::WriteOab(std::string fileName, std::ofstream *otbStream)
+{
+	/* nothing to do */
+	if(airspaces.size() == 0)
+	{
+		std::cout << "Empty" << std::endl;
+		return true;
+	}
 
-	OAB::writeFileHeader(myFile);
+	/* split file */
+	if(endsWith(fileName, ".oab") == false)
+		fileName = fileName + "/" + lastIsoCode + ".oab";
+
+	/* detect existing file */
+	struct stat buffer;
+	bool fileExists = stat(fileName.c_str(), &buffer) == 0;
+
+	/* open */
+	std::ofstream myFile(fileName, fileExists ? (std::ios::app |std::ios::out | std::ios::binary) :  (std::ios::out | std::ios::binary));
+	if(fileExists == false)
+		OAB::writeFileHeader(myFile);
+	else
+		std::cout<< "(continued)" << std::endl;
 
 	for (auto airspace : airspaces)
-		airspace.write(myFile);
+	{
+		airspace.write(myFile, otbStream == nullptr);
+		if(otbStream != nullptr)
+			airspace.writeActivations(otbStream);
+	}
 
 	myFile.close();
+	std::cout << (fileExists? "Appended " : "Written ") << airspaces.size() << " airspaces" << std::endl;
 
-	std::cout << "Written " << airspaces.size() << " airspaces to kml" << std::endl;
+	/* cleanup */
+	airspaces.clear();
+	tempPolygoneCoordinates.clear();
 
 	return true;
 }

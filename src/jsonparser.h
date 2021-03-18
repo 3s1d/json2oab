@@ -6,10 +6,13 @@
  */
 
 #pragma once
-#include "oab.hpp"
 #include <rapidjson/document.h>
+
 #include "kmlcreator.h"
 #include "boost/regex.hpp"
+
+#include "otb.hpp"
+#include "oab.hpp"
 
 class JsonParser
 {
@@ -19,11 +22,10 @@ private:
 	std::vector<Coord> tempPolygoneCoordinates;
 	enum class AirspaceLimit {UpperLimit, LowerLimit};
 	boost::regex notamExpr{ ".+/\\d+\\s+NOTAM.+" };
+	string lastIsoCode = string();
 
 	time_t ParseTime(std::string& time);
 	
-	KmlCreator kmlCreator;
-
 	double SetAirspaceLimits(OAB& tempAirspace, rapidjson::Value& airspace, AirspaceLimit limit);
 	void SetAirspaceClass(OAB& tempAirspace, rapidjson::Value& airspace);
 	void SetAirspaceName(OAB& tempAirspace, rapidjson::Value& airspace);
@@ -32,10 +34,12 @@ private:
 	
 	
 public:
+	KmlCreator kmlCreator;
+
 	JsonParser();
 	~JsonParser();
 
 	void Parse(std::string fileName);
-	bool WriteOab(std::string fname);
+	bool WriteOab(std::string fname, std::ofstream *otbStream = nullptr);
 };
 

@@ -14,9 +14,10 @@
 //todo type mapping! enum!
 
 /*
- * Format:
+ * OAB Format:
+ * +++++++++++++++++++++++++++
  * 3byte char      'OAB'
- * 1byte uint8_t   version number, currently 2
+ * 1byte uint8_t   version number, currently 3
  * 8byte time_t	   built time
  *
  * Airspace:
@@ -29,10 +30,9 @@
  * 4byte  float    bottom (latitude rad)
  * 4byte  float    left (longitude rad)
  * 4byte  float    right (longitude rad)
- * 2byte  uint16_t  flags
+ * 2byte  uint16_t flags
  * 2byte  uint16_t number of polygons
- * 2byte  uint16_t number of activation times
- * 2byte  uint16_t [RESERVED]
+ * 4byte  uint32_t airId
  * --------------------------------------
  * 60bytes
  *
@@ -47,6 +47,12 @@
  * time_t end activation
  * --------------------------
  * 16 Bytes
+ *
+ *
+ *
+ *
+ *
+ * External activation times file -> otb.hpp
  */
 
 #include <vector>
@@ -63,10 +69,13 @@
 #define OAB_ALTREF_MSL			0x0002
 #define OAB_ALTREF_FL			0x0003
 
-#define OAB_ALTREF_BOTTOM_OFFSET	0
-#define OAB_ALTREF_TOP_OFFSET		3		//1bit reserved
+#define OAB_ALTREF_BOTTOM_OFFSET	0		//bits 0..2	(1bit unused)
+#define OAB_ALTREF_TOP_OFFSET		3		//bits 3..5	(1bit unused)
+#define OAB_ALTREF_MASK			0x07
+#define OAB_NUMACIVATIONS		6		//bits 6..11 	-> 0x3F means external  file
+#define OAB_NUMACIVATIONS_MASK		0x3F
 
-#define OAB_MAGICNUMBER_FLAG		0xA000
+#define OAB_MAGICNUMBER_FLAG		0xA000		//bits 12..15
 
 class OAB
 {
@@ -122,8 +131,7 @@ public:
 
 		uint16_t flags;
 		uint16_t numPoly;
-		uint16_t numberOfActivationTimes;
-		uint16_t reservedUnused;
+		uint32_t airid;
 #ifdef _WIN32
 	} oab_header_t;
 #pragma pack()
@@ -145,7 +153,7 @@ public:
 	} oab_activationTimes_t;
 
 private:
-	void finalize(void);
+	void finalize(bool includeActivationTimes);
 	void add2RadVec(Coord &coord);
 
 	/* last position */
@@ -166,7 +174,8 @@ public:
 	void add(Coord &coord);
 
 	
-	void write(std::ofstream &file);
+	void write(std::ofstream &file, bool includeActivations = true);
+	void writeActivations(std::ofstream *file);
 
 	static void writeFileHeader(std::ofstream& file);
 	static void writeFileHeader(std::ofstream& file, time_t buildTime);
