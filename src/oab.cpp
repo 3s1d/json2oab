@@ -66,18 +66,20 @@ void OAB::add2RadVec(Coord &coord)
 }
 
 
-void OAB::writeFileHeader(std::ofstream &file, const OAB::bb_t &bb)
+void OAB::writeFileHeader(std::ofstream &file, const OAB::bb_t &bb, uint16_t nElem)
 {
-	writeFileHeader(file, time(nullptr), bb);
+	writeFileHeader(file, time(nullptr), bb, nElem);
 }
 
-void OAB::writeFileHeader(std::ofstream& file, time_t buildTime, const OAB::bb_t &bb)
+void OAB::writeFileHeader(std::ofstream& file, time_t buildTime, const OAB::bb_t &bb, uint16_t nElem)
 {
 	file.write(id, strlen(id));
 
 	file.write((char*)& buildTime, sizeof(time_t));
 
 	file.write((char*)& bb, sizeof(bb_t));
+
+	file.write((char*)& nElem, sizeof(uint16_t));
 }
 
 void OAB::write(std::ofstream &file, bool includeActivations)

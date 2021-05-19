@@ -450,7 +450,7 @@ bool JsonParser::WriteOab(std::string fileName, std::ofstream *otbStream)
 	/* open */
 	std::ofstream myFile(fileName, fileExists ? (std::ios::app |std::ios::out | std::ios::binary) :  (std::ios::out | std::ios::binary));
 	if(fileExists == false)
-		OAB::writeFileHeader(myFile, bb);
+		OAB::writeFileHeader(myFile, bb, airspaces.size());
 	else
 		std::cout<< "(continued)" << std::endl;
 

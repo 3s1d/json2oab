@@ -19,10 +19,11 @@
  * 3byte char      'OAB'
  * 1byte uint8_t   version number, currently 3
  * 8byte time_t	   built time
- * 4byte  float    top (latitude rad)
- * 4byte  float    bottom (latitude rad)
- * 4byte  float    left (longitude rad)
- * 4byte  float    right (longitude rad)
+ * 4byte float     top (latitude rad)
+ * 4byte float     bottom (latitude rad)
+ * 4byte float     left (longitude rad)
+ * 4byte float     right (longitude rad)
+ * 2byte uint16_t  #airspaces
  *
  * Airspace:
  * Header:
@@ -198,8 +199,8 @@ public:
 	void write(std::ofstream &file, bool includeActivations = true);
 	void writeActivations(std::ofstream *file);
 
-	static void writeFileHeader(std::ofstream& file, const OAB::bb_t &bb);
-	static void writeFileHeader(std::ofstream& file, time_t buildTime, const OAB::bb_t &bb);
+	static void writeFileHeader(std::ofstream& file, const OAB::bb_t &bb, uint16_t nElem);
+	static void writeFileHeader(std::ofstream& file, time_t buildTime, const OAB::bb_t &bb, uint16_t nElem);
 };
 
 #endif /* SRC_OAB_HPP_ */
