@@ -426,10 +426,31 @@ bool JsonParser::WriteOab(std::string fileName, std::ofstream *otbStream)
 	struct stat buffer;
 	bool fileExists = stat(fileName.c_str(), &buffer) == 0;
 
+	/* bounding box */
+	OAB::bb_t bb;
+	bb.topLat_rad = -M_PI;
+	bb.bottomLat_rad = M_PI;
+	bb.leftLon_rad =  M_2_PI;
+	bb.rightLon_rad = -M_PI_2;
+	for(auto &asp : airspaces)
+	{
+		for(auto &pt : asp.polygon)
+		{
+			if(pt.lat_rad > bb.topLat_rad)
+				bb.topLat_rad = pt.lat_rad;
+			if(pt.lat_rad < bb.bottomLat_rad)
+				bb.bottomLat_rad = pt.lat_rad;
+			if(pt.lon_rad > bb.rightLon_rad)
+				bb.rightLon_rad = pt.lon_rad;
+			if(pt.lon_rad < bb.leftLon_rad)
+				bb.leftLon_rad = pt.lon_rad;
+		}
+	}
+
 	/* open */
 	std::ofstream myFile(fileName, fileExists ? (std::ios::app |std::ios::out | std::ios::binary) :  (std::ios::out | std::ios::binary));
 	if(fileExists == false)
-		OAB::writeFileHeader(myFile);
+		OAB::writeFileHeader(myFile, bb);
 	else
 		std::cout<< "(continued)" << std::endl;
 

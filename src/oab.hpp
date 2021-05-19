@@ -19,6 +19,10 @@
  * 3byte char      'OAB'
  * 1byte uint8_t   version number, currently 3
  * 8byte time_t	   built time
+ * 4byte  float    top (latitude rad)
+ * 4byte  float    bottom (latitude rad)
+ * 4byte  float    left (longitude rad)
+ * 4byte  float    right (longitude rad)
  *
  * Airspace:
  * Header:
@@ -36,7 +40,7 @@
  * --------------------------------------
  * 60bytes
  *
- * Polygon(only, last closing point is not present):
+ * Polygon (only, last closing point is not present):
  * 4byte float latitude rad
  * 4byte float longitude rad
  * --------------------------
@@ -80,6 +84,23 @@
 class OAB
 {
 public:
+#ifdef _WIN32
+#pragma pack(1)
+#endif
+	/* bounding box */
+ 	typedef struct
+	{
+		float topLat_rad;
+		float bottomLat_rad;
+		float leftLon_rad;
+		float rightLon_rad;
+#ifdef _WIN32
+	} bb_t;
+#pragma pack()
+#else
+	} __attribute__((packed)) bb_t;
+#endif
+
 	typedef enum : char
 	{
 		CLASSA = 'A',
@@ -177,8 +198,8 @@ public:
 	void write(std::ofstream &file, bool includeActivations = true);
 	void writeActivations(std::ofstream *file);
 
-	static void writeFileHeader(std::ofstream& file);
-	static void writeFileHeader(std::ofstream& file, time_t buildTime);
+	static void writeFileHeader(std::ofstream& file, const OAB::bb_t &bb);
+	static void writeFileHeader(std::ofstream& file, time_t buildTime, const OAB::bb_t &bb);
 };
 
 #endif /* SRC_OAB_HPP_ */
