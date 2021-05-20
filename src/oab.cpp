@@ -66,13 +66,15 @@ void OAB::add2RadVec(Coord &coord)
 }
 
 
-void OAB::writeFileHeader(std::ofstream &file, const OAB::bb_t &bb, uint16_t nElem)
+void OAB::writeFileHeader(std::fstream &file, const OAB::bb_t &bb, uint16_t nElem)
 {
 	writeFileHeader(file, time(nullptr), bb, nElem);
 }
 
-void OAB::writeFileHeader(std::ofstream& file, time_t buildTime, const OAB::bb_t &bb, uint16_t nElem)
+void OAB::writeFileHeader(std::fstream &file, time_t buildTime, const OAB::bb_t &bb, uint16_t nElem)
 {
+	file.seekp(0, std::ios::beg);
+
 	file.write(id, strlen(id));
 
 	file.write((char*)& buildTime, sizeof(time_t));
@@ -82,7 +84,28 @@ void OAB::writeFileHeader(std::ofstream& file, time_t buildTime, const OAB::bb_t
 	file.write((char*)& nElem, sizeof(uint16_t));
 }
 
-void OAB::write(std::ofstream &file, bool includeActivations)
+bool OAB::readFileHeader(std::fstream &file, OAB::bb_t &bb, uint16_t &nElem)
+{
+	file.seekp(0, std::ios::beg);
+
+	time_t buildTime;
+	char idStr[strlen(id)];
+
+	file.read(idStr, sizeof(idStr));
+	if(strncmp(idStr, id, sizeof(idStr)) != 0)
+		return false;
+
+	file.read((char *)&buildTime, sizeof(time_t));
+
+	file.read((char *)&bb, sizeof(bb_t));
+
+	file.read((char *)&nElem, sizeof(uint16_t));
+
+	return true;
+}
+
+
+void OAB::write(std::fstream &file, bool includeActivations)
 {
 	/* finalize header */
 	finalize(includeActivations);

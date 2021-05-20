@@ -174,9 +174,9 @@ void JsonParser::SetAirspaceClass(OAB & tempAirspace, rapidjson::Value& airspace
 			else {
 				tempAirspace.header.type = OAB::PROHIBITED;
 			}
-		else if (airspace["airclass"] == "Q")
+		else if (airspace["airclass"] == "Q" || airspace["airclass"] == "DANGER")
 			tempAirspace.header.type = OAB::DANGER;
-		else if (airspace["airclass"] == "R") // Restricted
+		else if (airspace["airclass"] == "R" || airspace["airclass"] == "RESTRICTED") // Restricted
 			tempAirspace.header.type = OAB::RESTRICTED;
 		else if (airspace["airclass"] == "CTR")
 			tempAirspace.header.type = OAB::CTR;
@@ -196,7 +196,7 @@ void JsonParser::SetAirspaceClass(OAB & tempAirspace, rapidjson::Value& airspace
 			tempAirspace.header.type = OAB::IGNORE; //ignore
 		else if (airspace["airclass"] == "LZ")		//XContest Airspaces Ignore
 			tempAirspace.header.type = OAB::IGNORE;
-		else if (airspace["airclass"] == "GP")
+		else if (airspace["airclass"] == "GP" || airspace["airclass"] == "PROHIBITED")
 			tempAirspace.header.type = OAB::PROHIBITED;
 		else if (airspace["airclass"] == "W")
 			tempAirspace.header.type = OAB::IGNORE;
@@ -426,7 +426,8 @@ bool JsonParser::WriteOab(std::string fileName, std::ofstream *otbStream)
 	struct stat buffer;
 	bool fileExists = stat(fileName.c_str(), &buffer) == 0;
 
-	/* bounding box */
+	/* additional header */
+	uint16_t numAsp = airspaces.size();
 	OAB::bb_t bb;
 	bb.topLat_rad = -M_PI;
 	bb.bottomLat_rad = M_PI;
@@ -448,17 +449,45 @@ bool JsonParser::WriteOab(std::string fileName, std::ofstream *otbStream)
 	}
 
 	/* open */
-	std::ofstream myFile(fileName, fileExists ? (std::ios::app |std::ios::out | std::ios::binary) :  (std::ios::out | std::ios::binary));
+	std::fstream myFile(fileName, fileExists ? (std::ios::in | std::ios::out | std::ios::binary) : (std::ios::out | std::ios::binary) );
 	if(fileExists == false)
+	{
 		OAB::writeFileHeader(myFile, bb, airspaces.size());
+	}
 	else
+	{
+		OAB::bb_t bbExist;
+		uint16_t numAspExist;
+		if(OAB::readFileHeader(myFile, bbExist, numAspExist) == false)
+		{
+			std::cerr << "Unable to read header" << std::endl;
+			myFile.close();
+			return false;
+		}
+
+		numAsp += numAspExist;
+		if(bbExist.topLat_rad > bb.topLat_rad)
+			bb.topLat_rad = bbExist.topLat_rad;
+		if(bbExist.bottomLat_rad < bb.bottomLat_rad)
+			bb.bottomLat_rad = bbExist.bottomLat_rad;
+		if(bbExist.rightLon_rad > bb.rightLon_rad)
+			bb.rightLon_rad = bbExist.rightLon_rad;
+		if(bbExist.leftLon_rad < bb.leftLon_rad)
+			bb.leftLon_rad = bbExist.leftLon_rad;
+
+		/* update header */
+		myFile.seekp(0, std::ios::beg);
+		OAB::writeFileHeader(myFile, bb, numAsp);
+
+		myFile.seekp(0, std::ios::end);
 		std::cout<< "(continued)" << std::endl;
+	}
 
 	/* sort airspaces */
 	sort(airspaces.begin(), airspaces.end(), [](const OAB &lhs, const OAB &rhs) { return lhs.header.airid < rhs.header.airid; });
 
 	/* write airspaces */
-	for (auto airspace : airspaces)
+	for (auto &airspace : airspaces)
 	{
 		airspace.write(myFile, otbStream == nullptr);
 		if(otbStream != nullptr)
@@ -466,7 +495,7 @@ bool JsonParser::WriteOab(std::string fileName, std::ofstream *otbStream)
 	}
 
 	myFile.close();
-	std::cout << (fileExists? "Appended " : "Written ") << airspaces.size() << " airspaces" << std::endl;
+	std::cout << (fileExists? "Appended " : "Written ") << airspaces.size() << " airspaces (" << numAsp << " total)" << std::endl;
 
 	/* cleanup */
 	airspaces.clear();

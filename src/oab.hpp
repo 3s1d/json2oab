@@ -196,11 +196,12 @@ public:
 	void add(Coord &coord);
 
 	
-	void write(std::ofstream &file, bool includeActivations = true);
+	void write(std::fstream &file, bool includeActivations = true);
 	void writeActivations(std::ofstream *file);
 
-	static void writeFileHeader(std::ofstream& file, const OAB::bb_t &bb, uint16_t nElem);
-	static void writeFileHeader(std::ofstream& file, time_t buildTime, const OAB::bb_t &bb, uint16_t nElem);
+	static void writeFileHeader(std::fstream& file, const OAB::bb_t &bb, uint16_t nElem);
+	static void writeFileHeader(std::fstream& file, time_t buildTime, const OAB::bb_t &bb, uint16_t nElem);
+	static bool readFileHeader(std::fstream &file, OAB::bb_t &bb, uint16_t &nElem);
 };
 
 #endif /* SRC_OAB_HPP_ */
