@@ -22,7 +22,6 @@ private:
 	std::vector<Coord> tempPolygoneCoordinates;
 	enum class AirspaceLimit {UpperLimit, LowerLimit};
 	boost::regex notamExpr{ ".+/\\d+\\s+NOTAM.+" };
-	boost::regex dabsExpr{ ".+/\\d+\\s+DABS activated.+" };
 
 	string lastIsoCode = string();
 
