@@ -42,17 +42,56 @@ void JsonParser::Parse(std::string fileName)
 		
 		printf("Parsing: %s\n", document["channame"].GetString());
 
+		if(document.HasMember("isocode"))
+		{
+			if(std::strcmp(document["isocode"].GetString(), "CG") == 0)
+			{
+				std::cout << "Dropping " << fileName << std::endl;
+				return;
+			}
+
+			//note: req. only for v3 file separation
+			//lastIsoCode = document["isocode"].GetString();
+		}
 		
 		for (auto& airspace : document["airspaces"].GetArray()) {
 			bool skipAirspace = false;
 			
-			if (boost::iequals(document["channame"].GetString(), "Switzerland")) {
+			if (boost::iequals(document["channame"].GetString(), "Switzerland")) 
+			{
 				if (airspace.HasMember("airchecktype"))
 				{
 					if (boost::iequals(airspace["airchecktype"].GetString(), "ignore")) {
 
 						std::cout << "Switzerland: " << airspace["name"].GetString() << "IGNORE." << std::endl;
+						skipAirspace = true;
 						continue;
+					}
+				}
+
+				/*
+				 * exclude DABS from CH if no activations are known
+				 * "descriptions": [{"airlanguage": "en", "airdescription": "Mil Radar\r\nTYPE:Q\r\nDABS activated\r\n"}],
+				 * "activations": [],
+				 */
+				if (airspace.HasMember("descriptions"))
+				{
+					for (auto& description : airspace["descriptions"].GetArray())
+					{
+						if (description.HasMember("airdescription"))
+						{
+							std::string airDescription = description["airdescription"].GetString();
+
+							if(airDescription.find("DABS activated") != std::string::npos)
+							{
+								if(airspace.HasMember("activations") == false or airspace["activations"].GetArray().Empty())
+								{
+									std::cout << "Found DABS w/o actTime skipping: " << airspace["name"].GetString() << std::endl;
+									skipAirspace = true;
+									break;
+								}
+							}
+						}
 					}
 				}
 			}
@@ -158,9 +197,9 @@ void JsonParser::SetAirspaceClass(OAB & tempAirspace, rapidjson::Value& airspace
 			else {
 				tempAirspace.header.type = OAB::PROHIBITED;
 			}
-		else if (airspace["airclass"] == "Q")
+		else if (airspace["airclass"] == "Q" || airspace["airclass"] == "DANGER")
 			tempAirspace.header.type = OAB::DANGER;
-		else if (airspace["airclass"] == "R") // Restricted
+		else if (airspace["airclass"] == "R" || airspace["airclass"] == "RESTRICTED") // Restricted
 			tempAirspace.header.type = OAB::RESTRICTED;
 		else if (airspace["airclass"] == "CTR")
 			tempAirspace.header.type = OAB::CTR;
@@ -180,7 +219,7 @@ void JsonParser::SetAirspaceClass(OAB & tempAirspace, rapidjson::Value& airspace
 			tempAirspace.header.type = OAB::IGNORE; //ignore
 		else if (airspace["airclass"] == "LZ")		//XContest Airspaces Ignore
 			tempAirspace.header.type = OAB::IGNORE;
-		else if (airspace["airclass"] == "GP")
+		else if (airspace["airclass"] == "GP" || airspace["airclass"] == "PROHIBITED")
 			tempAirspace.header.type = OAB::PROHIBITED;
 		else if (airspace["airclass"] == "W")
 			tempAirspace.header.type = OAB::IGNORE;
