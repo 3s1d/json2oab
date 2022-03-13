@@ -20,7 +20,6 @@
 #include "activationtime.h"
 #include "kmlcreator.h"
 
-
 JsonParser::JsonParser()
 {
 	kmlCreator = KmlCreator();
@@ -57,15 +56,45 @@ void JsonParser::Parse(std::string fileName)
 		for (auto& airspace : document["airspaces"].GetArray()) {
 			bool skipAirspace = false;
 			
-			if (boost::iequals(document["channame"].GetString(), "Switzerland")) {
+			if (boost::iequals(document["channame"].GetString(), "Switzerland"))
+			{
 				if (airspace.HasMember("airchecktype"))
 				{
 					if (boost::iequals(airspace["airchecktype"].GetString(), "ignore")) {
 
 						std::cout << "Switzerland: " << airspace["name"].GetString() << "IGNORE." << std::endl;
+						skipAirspace = true;
 						continue;
 					}
 				}
+
+				/*
+				 * exclude DABS from CH if no activations are known
+				 * "descriptions": [{"airlanguage": "en", "airdescription": "Mil Radar\r\nTYPE:Q\r\nDABS activated\r\n"}],
+				 * "activations": [],
+				 */
+				if (airspace.HasMember("descriptions"))
+				{
+					for (auto& description : airspace["descriptions"].GetArray())
+					{
+						if (description.HasMember("airdescription"))
+						{
+							std::string airDescription = description["airdescription"].GetString();
+
+							if (boost::regex_match(airDescription, dabsExpr))
+							{
+								std::cout << "Found DABS: " << airspace["name"].GetString() << std::endl;
+								if(airspace.HasMember("activations") == false or airspace["activations"].GetArray().Empty())
+								{
+									std::cout << "Found DABS skipping: " << airspace["name"].GetString() << std::endl;
+									skipAirspace = true;
+									break;
+								}
+							}
+						}
+					}
+				}
+
 			}
 			
 			OAB tempSpace;
