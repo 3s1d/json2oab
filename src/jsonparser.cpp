@@ -81,12 +81,11 @@ void JsonParser::Parse(std::string fileName)
 						{
 							std::string airDescription = description["airdescription"].GetString();
 
-							if (boost::regex_match(airDescription, dabsExpr))
+							if(airDescription.find("DABS activated") != std::string::npos)
 							{
-								std::cout << "Found DABS: " << airspace["name"].GetString() << std::endl;
 								if(airspace.HasMember("activations") == false or airspace["activations"].GetArray().Empty())
 								{
-									std::cout << "Found DABS skipping: " << airspace["name"].GetString() << std::endl;
+									std::cout << "Found DABS w/o actTime skipping: " << airspace["name"].GetString() << std::endl;
 									skipAirspace = true;
 									break;
 								}
