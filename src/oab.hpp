@@ -17,7 +17,7 @@
  * OAB Format:
  * +++++++++++++++++++++++++++
  * 3byte char      'OAB'
- * 1byte uint8_t   version number, currently 3
+ * 1byte uint8_t   version number, currently 4
  * 8byte time_t	   built time
  * 4byte float     top (latitude rad)
  * 4byte float     bottom (latitude rad)
@@ -38,8 +38,13 @@
  * 2byte  uint16_t flags
  * 2byte  uint16_t number of polygons
  * 4byte  uint32_t airId
- * --------------------------------------
+  * --------------------------------------
  * 60bytes
+ *
+ * Additional bottom altitude (optional, only if OAB_ALTREF_ALTGND in OAB_ALTREF_BOTTOM_OFFSET is set)
+ * 2byte int16_t   alternative bottom altitude ft
+ * -------------------------
+ * 2bytes
  *
  * Polygon (only, last closing point is not present):
  * 4byte float latitude rad
@@ -47,7 +52,7 @@
  * --------------------------
  * 8bytes
  * 
- * Activation times
+ * Activation times (only if number of polygons > 0 and < 0x3F)
  * time_t start activation
  * time_t end activation
  * --------------------------
@@ -73,11 +78,12 @@
 #define OAB_ALTREF_GND			0x0001
 #define OAB_ALTREF_MSL			0x0002
 #define OAB_ALTREF_FL			0x0003
+#define OAB_ALTREF_ALTGND		0x0004		//only valid for bottom
 
-#define OAB_ALTREF_BOTTOM_OFFSET	0		//bits 0..2	(1bit unused)
+#define OAB_ALTREF_BOTTOM_OFFSET	0		//bits 0..2
 #define OAB_ALTREF_TOP_OFFSET		3		//bits 3..5	(1bit unused)
-#define OAB_ALTREF_MASK			0x07
-#define OAB_NUMACIVATIONS		6		//bits 6..11 	-> 0x3F means external  file
+#define OAB_ALTREF_MASK				0x07
+#define OAB_NUMACIVATIONS			6		//bits 6..11 	-> 0x3F means external  file
 #define OAB_NUMACIVATIONS_MASK		0x3F
 
 #define OAB_MAGICNUMBER_FLAG		0xA000		//bits 12..15
@@ -160,7 +166,7 @@ public:
 #else
 	} __attribute__((packed)) oab_header_t;
 #endif
-
+	int16_t altitudeBottomAlt_ft = -1;
 
 	typedef struct
 	{

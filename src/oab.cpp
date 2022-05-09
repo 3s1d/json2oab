@@ -17,7 +17,7 @@
 #include "oab.hpp"
 
 
-const char *OAB::id = "OAB\x3";
+const char *OAB::id = "OAB\x4";
 
 Coord proj_deg(Coord &src, Coord &poi)
 {
@@ -112,6 +112,10 @@ void OAB::write(std::fstream &file, bool includeActivations)
 
 	/* write header */
 	file.write((char *) &header, sizeof(oab_header_t));
+
+	/* alternative bottom altitude */
+	if(altitudeBottomAlt_ft != -1)
+		file.write((char *) &altitudeBottomAlt_ft, sizeof(int16_t));
 
 	/* write polygons */
 	for (auto poly : polygon) {

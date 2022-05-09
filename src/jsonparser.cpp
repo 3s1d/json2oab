@@ -73,6 +73,8 @@ void JsonParser::Parse(std::string fileName)
 				 * "descriptions": [{"airlanguage": "en", "airdescription": "Mil Radar\r\nTYPE:Q\r\nDABS activated\r\n"}],
 				 * "activations": [],
 				 */
+//tbr
+/*
 				if (airspace.HasMember("descriptions"))
 				{
 					for (auto& description : airspace["descriptions"].GetArray())
@@ -93,7 +95,7 @@ void JsonParser::Parse(std::string fileName)
 						}
 					}
 				}
-
+*/
 			}
 			
 			OAB tempSpace;
@@ -163,10 +165,8 @@ void JsonParser::Parse(std::string fileName)
 			
 			kmlCreator.AddAirspace(document["channame"].GetString(),
 				document["description"].IsNull() ? "" : document["description"].GetString(),
-				airspace,
-				tempPolygoneCoordinates, 
-				lowerAltitude / 3.2808,
-				upperAltitude/ 3.2808);
+				airspace, tempPolygoneCoordinates, lowerAltitude / 3.2808, upperAltitude/ 3.2808,
+				tempSpace.altitudeBottomAlt_ft != -1 ? (tempSpace.altitudeBottomAlt_ft / 3.2808) : -1);
 
 			airspaces.push_back(tempSpace);
 		}
@@ -196,10 +196,12 @@ void JsonParser::SetAirspaceClass(OAB & tempAirspace, rapidjson::Value& airspace
 		else if (airspace["airclass"] == "G")
 			tempAirspace.header.type = OAB::IGNORE; //ignore
 		else if (airspace["airclass"] == "P")
-			if (airspace["airchecktype"] == "ignore") {
+			if (airspace["airchecktype"] == "ignore")
+			{
 				tempAirspace.header.type = OAB::IGNORE; //ignore
 			}
-			else {
+			else
+			{
 				tempAirspace.header.type = OAB::PROHIBITED;
 			}
 		else if (airspace["airclass"] == "Q" || airspace["airclass"] == "DANGER")
@@ -310,23 +312,31 @@ double JsonParser::SetAirspaceLimits(OAB & tempAirspace, rapidjson::Value & airs
 	{
 		int16_t returnAltitudeFeet;
 		int16_t altitudeFt = airspace[jsonLimit_c]["hfeet"].GetInt();
+		int16_t altitudeAltFt = 0;
 		returnAltitudeFeet = altitudeFt;
 
 		std::string htype = std::string(airspace[jsonLimit_c]["htype"].GetString(), airspace[jsonLimit_c]["htype"].GetStringLength());
 
 		uint16_t altref = 0;
-		if (htype.compare("FL") == 0)
+		if(htype.compare("FL") == 0)
 		{
 			altref = OAB_ALTREF_FL;
 			altitudeFt = altitudeFt / 100;
 		}
-		else if (htype.compare("AMSL") == 0 || htype.compare("MAX") == 0)
+		else if(htype.compare("AMSL") == 0 || htype.compare("MAX") == 0)
 		{
 			altref = OAB_ALTREF_MSL;
 		}
-		else if (htype.compare("AGL") == 0)
+		else if(htype.compare("AGL") == 0)
 		{
 			altref = OAB_ALTREF_GND;
+		}
+		else if(htype.compare("AGL/AMSL") == 0)
+		{
+			altref = OAB_ALTREF_MSL | OAB_ALTREF_ALTGND;
+			altitudeAltFt = altitudeFt;									//GND
+			altitudeFt = airspace[jsonLimit_c]["hfeet2"].GetInt();		//MSL
+			returnAltitudeFeet = altitudeFt;
 		}
 		else
 		{
@@ -336,12 +346,18 @@ double JsonParser::SetAirspaceLimits(OAB & tempAirspace, rapidjson::Value & airs
 
 		switch (limit) {
 		case AirspaceLimit::UpperLimit:
+			if(altref & OAB_ALTREF_ALTGND)
+			{
+				std::cerr << "unsupported dual top altitude " << htype << std::endl;
+				exit(EXIT_FAILURE);
+			}
 			tempAirspace.header.flags |= altref << OAB_ALTREF_TOP_OFFSET;
 			tempAirspace.header.altitudeTop_ft = altitudeFt;
 			break;
 		case AirspaceLimit::LowerLimit:
 			tempAirspace.header.flags |= altref << OAB_ALTREF_BOTTOM_OFFSET;
 			tempAirspace.header.altitudeBottom_ft = altitudeFt;
+			tempAirspace.altitudeBottomAlt_ft = altitudeAltFt;
 			break;
 		default:
 			std::cerr << "Unknown limit." << std::endl;
@@ -403,6 +419,17 @@ void JsonParser::SetAirspceActivations(OAB & tempAirspace, rapidjson::Value & js
 
 		activationTime.startActivationZulu = ParseTime(startTime);
 		activationTime.endActivationZulu = ParseTime(endTime);
+
+		tempAirspace.activationTimes.push_back(activationTime);
+	}
+
+	/* inject dummy activation time so that it does not get dropped nor activated forever */
+	if(jsonActivationTimes["activations"].GetArray().Empty())
+	{
+		const time_t utc_in2weeks = time(nullptr) + 3600*24*15;
+		OAB::oab_activationTimes_t activationTime;
+		activationTime.startActivationZulu = utc_in2weeks;
+		activationTime.endActivationZulu = utc_in2weeks + 3600*24*100;		//100days
 
 		tempAirspace.activationTimes.push_back(activationTime);
 	}
