@@ -312,7 +312,7 @@ double JsonParser::SetAirspaceLimits(OAB & tempAirspace, rapidjson::Value & airs
 	{
 		int16_t returnAltitudeFeet;
 		int16_t altitudeFt = airspace[jsonLimit_c]["hfeet"].GetInt();
-		int16_t altitudeAltFt = 0;
+		int16_t altitudeAltFt = -1;
 		returnAltitudeFeet = altitudeFt;
 
 		std::string htype = std::string(airspace[jsonLimit_c]["htype"].GetString(), airspace[jsonLimit_c]["htype"].GetStringLength());

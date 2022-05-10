@@ -49,6 +49,7 @@ void OAB::reset(void)
 	polygonSample_dist = 0.0f;
 	std::fill(header.name, header.name + sizeof(header.name), 0);
 	header.flags = 0;
+	altitudeBottomAlt_ft = -1;
 }
 
 void OAB::setName(std::string &name)
@@ -114,13 +115,12 @@ void OAB::write(std::fstream &file, bool includeActivations)
 	file.write((char *) &header, sizeof(oab_header_t));
 
 	/* alternative bottom altitude */
-	if(altitudeBottomAlt_ft != -1)
+	if(header.flags & (OAB_ALTREF_ALTGND << OAB_ALTREF_BOTTOM_OFFSET))
 		file.write((char *) &altitudeBottomAlt_ft, sizeof(int16_t));
 
 	/* write polygons */
-	for (auto poly : polygon) {
+	for (auto poly : polygon)
 		file.write((char*)& poly, sizeof(oab_edge_t));
-	}
 
 	/* write activation times */
 	if(includeActivations)
