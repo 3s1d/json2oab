@@ -112,7 +112,8 @@ void KmlCreator::SetAirspaceStyle(kmldom::PlacemarkPtr placemark, std::string ai
 	}
 }
 
-std::string KmlCreator::CreateDescription(std::string airspaceClass, float floorLimitM, float topLimitM, double floorLimitAglM)
+std::string KmlCreator::CreateDescription(std::string airspaceClass, float floorLimitM, float topLimitM,
+		double floorLimitAglM, double ceilingLimitAglM)
 {
 	std::ostringstream stringStream;
 	stringStream << "<table cellpadding=0 cellspacing=0 width=300>" << std::endl;
@@ -125,6 +126,13 @@ std::string KmlCreator::CreateDescription(std::string airspaceClass, float floor
 	stringStream << "<td>" << "Ceiling" << "</td>" << std::endl;
 	stringStream << "<td>" << round(topLimitM) << "m" << "</td>" << std::endl;
 	stringStream << "</tr>" << std::endl;
+	if(std::isnan(ceilingLimitAglM) == false and ceilingLimitAglM > 0.0)
+	{
+		stringStream << "<tr>" << std::endl;
+		stringStream << "<td>" << "</td>" << std::endl;
+		stringStream << "<td>" << round(ceilingLimitAglM) << "m AGL" << "</td>" << std::endl;
+		stringStream << "</tr>" << std::endl;
+	}
 
 	stringStream << "<tr>" << std::endl;
 	stringStream << "<td>" << "Floor" << "</td>" << std::endl;
@@ -201,11 +209,11 @@ kmldom::PolygonPtr KmlCreator::BuildPolygonTopBottom(std::vector<Coord> coordina
 }
 
 void KmlCreator::AddAirspace(std::string channel, std::string countryDescription, rapidjson::Value& airspace, std::vector<Coord> coordinates,
-		double floorAltitude, double topAltitude, double floorAltitudeAgl)
+		double floorAltitude, double topAltitude, double floorAltitudeAgl, double ceilingAltitudeAgl)
 {
 	float lowerLimitM = floorAltitude;		//airspace["lowerLimit"]["hfeet"].GetInt() / 3.28084;
 	float upperLimitM = topAltitude;		//airspace["upperLimit"]["hfeet"].GetInt() / 3.28084;
-	std::string description = CreateDescription(airspace["airclass"].GetString(), lowerLimitM, upperLimitM, floorAltitudeAgl);
+	std::string description = CreateDescription(airspace["airclass"].GetString(), lowerLimitM, upperLimitM, floorAltitudeAgl, ceilingAltitudeAgl);
 
 	kmldom::FolderPtr channelFolder;
 	if (folderPtrMap.count(channel) == 0)

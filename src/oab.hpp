@@ -41,22 +41,23 @@
   * --------------------------------------
  * 60bytes
  *
- * Additional bottom altitude (optional, only if OAB_ALTREF_ALTGND in OAB_ALTREF_BOTTOM_OFFSET is set)
+ * Additional top/bottom altitude (optional, only if OAB_ALTREF_ALTGND in OAB_ALTREF_BOTTOM_OFFSET/OAB_ALTREF_TOP_OFFSET is set)
+ * 2byte int16_t   alternative top altitude ft
  * 2byte int16_t   alternative bottom altitude ft
  * -------------------------
- * 2bytes
+ * 0-4bytes
  *
  * Polygon (only, last closing point is not present):
  * 4byte float latitude rad
  * 4byte float longitude rad
  * --------------------------
- * 8bytes
+ * 8bytes each
  * 
  * Activation times (only if number of polygons > 0 and < 0x3F)
  * time_t start activation
  * time_t end activation
  * --------------------------
- * 16 Bytes
+ * 16bytes each
  *
  *
  *
@@ -75,13 +76,13 @@
 #define deg2rad(angleDegrees) (angleDegrees * M_PI / 180.0)
 #define rad2deg(angleRadians) (angleRadians * 180.0 / M_PI)
 
-#define OAB_ALTREF_GND			0x0001
-#define OAB_ALTREF_MSL			0x0002
-#define OAB_ALTREF_FL			0x0003
-#define OAB_ALTREF_ALTGND		0x0004		//only valid for bottom
+#define OAB_ALTREF_GND				0x0001
+#define OAB_ALTREF_MSL				0x0002
+#define OAB_ALTREF_FL				0x0003
+#define OAB_ALTREF_ALTGND			0x0004
 
 #define OAB_ALTREF_BOTTOM_OFFSET	0		//bits 0..2
-#define OAB_ALTREF_TOP_OFFSET		3		//bits 3..5	(1bit unused)
+#define OAB_ALTREF_TOP_OFFSET		3		//bits 3..5
 #define OAB_ALTREF_MASK				0x07
 #define OAB_NUMACIVATIONS			6		//bits 6..11 	-> 0x3F means external  file
 #define OAB_NUMACIVATIONS_MASK		0x3F
@@ -166,6 +167,8 @@ public:
 #else
 	} __attribute__((packed)) oab_header_t;
 #endif
+
+	int16_t altitudeTopAlt_ft = -1;
 	int16_t altitudeBottomAlt_ft = -1;
 
 	typedef struct

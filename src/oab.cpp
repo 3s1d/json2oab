@@ -114,7 +114,9 @@ void OAB::write(std::fstream &file, bool includeActivations)
 	/* write header */
 	file.write((char *) &header, sizeof(oab_header_t));
 
-	/* alternative bottom altitude */
+	/* alternative altitudes */
+	if(header.flags & (OAB_ALTREF_ALTGND << OAB_ALTREF_TOP_OFFSET))
+		file.write((char *) &altitudeTopAlt_ft, sizeof(int16_t));
 	if(header.flags & (OAB_ALTREF_ALTGND << OAB_ALTREF_BOTTOM_OFFSET))
 		file.write((char *) &altitudeBottomAlt_ft, sizeof(int16_t));
 

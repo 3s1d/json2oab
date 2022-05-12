@@ -166,7 +166,8 @@ void JsonParser::Parse(std::string fileName)
 			kmlCreator.AddAirspace(document["channame"].GetString(),
 				document["description"].IsNull() ? "" : document["description"].GetString(),
 				airspace, tempPolygoneCoordinates, lowerAltitude / 3.2808, upperAltitude/ 3.2808,
-				tempSpace.altitudeBottomAlt_ft != -1 ? (tempSpace.altitudeBottomAlt_ft / 3.2808) : -1);
+				tempSpace.altitudeBottomAlt_ft != -1 ? (tempSpace.altitudeBottomAlt_ft / 3.2808) : -1,
+				tempSpace.altitudeTopAlt_ft != -1 ? (tempSpace.altitudeTopAlt_ft / 3.2808) : -1);
 
 			airspaces.push_back(tempSpace);
 		}
@@ -241,7 +242,7 @@ void JsonParser::SetAirspaceClass(OAB & tempAirspace, rapidjson::Value& airspace
 		else if (airspace["airclass"] == "Powerline")
 			tempAirspace.header.type = OAB::IGNORE;
 		else if (airspace["airclass"] == "MATZ")
-			tempAirspace.header.type = OAB::DANGER;
+			tempAirspace.header.type = OAB::CLASSG;
 		else if (airspace["airclass"] == "TSA")
 			tempAirspace.header.type = OAB::IGNORE;
 		else if (airspace["airclass"] == "ZP")
@@ -346,13 +347,9 @@ double JsonParser::SetAirspaceLimits(OAB & tempAirspace, rapidjson::Value & airs
 
 		switch (limit) {
 		case AirspaceLimit::UpperLimit:
-			if(altref & OAB_ALTREF_ALTGND)
-			{
-				std::cerr << "unsupported dual top altitude " << htype << std::endl;
-				exit(EXIT_FAILURE);
-			}
 			tempAirspace.header.flags |= altref << OAB_ALTREF_TOP_OFFSET;
 			tempAirspace.header.altitudeTop_ft = altitudeFt;
+			tempAirspace.altitudeTopAlt_ft = altitudeAltFt;
 			break;
 		case AirspaceLimit::LowerLimit:
 			tempAirspace.header.flags |= altref << OAB_ALTREF_BOTTOM_OFFSET;
