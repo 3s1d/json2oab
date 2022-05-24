@@ -49,7 +49,6 @@ void JsonParser::Parse(std::string fileName)
 				std::cout << "Dropping " << fileName << std::endl;
 				return;
 			}
-
 			//note: req. only for v3 file separation
 			//lastIsoCode = document["isocode"].GetString();
 		}
@@ -74,6 +73,8 @@ void JsonParser::Parse(std::string fileName)
 				 * "descriptions": [{"airlanguage": "en", "airdescription": "Mil Radar\r\nTYPE:Q\r\nDABS activated\r\n"}],
 				 * "activations": [],
 				 */
+//tbr
+/*
 				if (airspace.HasMember("descriptions"))
 				{
 					for (auto& description : airspace["descriptions"].GetArray())
@@ -94,6 +95,7 @@ void JsonParser::Parse(std::string fileName)
 						}
 					}
 				}
+*/
 			}
 			
 			OAB tempSpace;
@@ -161,7 +163,7 @@ void JsonParser::Parse(std::string fileName)
 				airspace,
 				tempPolygoneCoordinates, 
 				lowerAltitude / 3.2808,
-				upperAltitude/ 3.2808);
+				upperAltitude / 3.2808);
 
 			airspaces.push_back(tempSpace);
 		}
@@ -234,7 +236,7 @@ void JsonParser::SetAirspaceClass(OAB & tempAirspace, rapidjson::Value& airspace
 		else if (airspace["airclass"] == "Powerline")
 			tempAirspace.header.type = OAB::IGNORE;
 		else if (airspace["airclass"] == "MATZ")
-			tempAirspace.header.type = OAB::IGNORE;
+			tempAirspace.header.type = OAB::CLASSG;
 		else if (airspace["airclass"] == "TSA")
 			tempAirspace.header.type = OAB::IGNORE;
 		else if (airspace["airclass"] == "ZP")
@@ -323,6 +325,13 @@ double JsonParser::SetAirspaceLimits(OAB & tempAirspace, rapidjson::Value & airs
 		{
 			altref = OAB_ALTREF_GND;
 		}
+		else if(htype.compare("AGL/AMSL") == 0)
+		{
+			//note: v2 only supports one altitude -> MSL
+			altref = OAB_ALTREF_MSL;
+			altitudeFt = airspace[jsonLimit_c]["hfeet2"].GetInt();		//MSL
+			returnAltitudeFeet = altitudeFt;
+		}
 		else
 		{
 			std::cerr << "unknown htype: " << htype << std::endl;
@@ -398,6 +407,17 @@ void JsonParser::SetAirspceActivations(OAB & tempAirspace, rapidjson::Value & js
 
 		activationTime.startActivationZulu = ParseTime(startTime);
 		activationTime.endActivationZulu = ParseTime(endTime);
+
+		tempAirspace.activationTimes.push_back(activationTime);
+	}
+
+	/* inject dummy activation time so that it does not get dropped nor activated forever */
+	if(jsonActivationTimes["activations"].GetArray().Empty())
+	{
+		const time_t utc_in2weeks = time(nullptr) + 3600*24*15;
+		OAB::oab_activationTimes_t activationTime;
+		activationTime.startActivationZulu = utc_in2weeks;
+		activationTime.endActivationZulu = utc_in2weeks + 3600*24*100;		//100days
 
 		tempAirspace.activationTimes.push_back(activationTime);
 	}
