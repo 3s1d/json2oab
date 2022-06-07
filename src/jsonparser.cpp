@@ -312,21 +312,35 @@ double JsonParser::SetAirspaceLimits(OAB & tempAirspace, rapidjson::Value & airs
 	if (airspace.HasMember(jsonLimit_c))
 	{
 		int16_t returnAltitudeFeet;
-		int16_t altitudeFt = airspace[jsonLimit_c]["hfeet"].GetInt();
+		int32_t altitudeFt = airspace[jsonLimit_c]["hfeet"].GetInt();
 		int16_t altitudeAltFt = -1;
 		returnAltitudeFeet = altitudeFt;
 
 		std::string htype = std::string(airspace[jsonLimit_c]["htype"].GetString(), airspace[jsonLimit_c]["htype"].GetStringLength());
 
 		uint16_t altref = 0;
-		if(htype.compare("FL") == 0)
+		if(htype.compare("FL") == 0 or htype.compare("MAX") == 0)
 		{
 			altref = OAB_ALTREF_FL;
-			altitudeFt = altitudeFt / 100;
+			if(htype.compare("MAX") == 0)
+				altitudeFt = 660;										//space is the limit
+			else
+				altitudeFt = altitudeFt / 100;
+			returnAltitudeFeet = altitudeFt;							//re'set as it may have been trunked
 		}
-		else if(htype.compare("AMSL") == 0 || htype.compare("MAX") == 0)
+		else if(htype.compare("AMSL") == 0)
 		{
-			altref = OAB_ALTREF_MSL;
+			if(altitudeFt > INT16_MAX)										//altitudes > 32000ft should use FL anyway
+			{
+				std::cout << "Faking AMSL by FL" << std::endl;
+				altref = OAB_ALTREF_FL;
+				altitudeFt = altitudeFt / 100;
+				returnAltitudeFeet = altitudeFt;							//re'set as it may have been trunked
+			}
+			else
+			{
+				altref = OAB_ALTREF_MSL;
+			}
 		}
 		else if(htype.compare("AGL") == 0)
 		{
@@ -358,6 +372,12 @@ double JsonParser::SetAirspaceLimits(OAB & tempAirspace, rapidjson::Value & airs
 			break;
 		default:
 			std::cerr << "Unknown limit." << std::endl;
+			exit(EXIT_FAILURE);
+		}
+
+		if(altitudeFt > INT16_MAX)
+		{
+			std::cerr << "altitude too big" << std::endl;
 			exit(EXIT_FAILURE);
 		}
 
@@ -417,7 +437,8 @@ void JsonParser::SetAirspceActivations(OAB & tempAirspace, rapidjson::Value & js
 		activationTime.startActivationZulu = ParseTime(startTime);
 		activationTime.endActivationZulu = ParseTime(endTime);
 
-		tempAirspace.activationTimes.push_back(activationTime);
+		if(tempAirspace.activationTimes.size() < OAB_NUMACIVATIONS_MASK)
+			tempAirspace.activationTimes.push_back(activationTime);
 	}
 
 	/* inject dummy activation time so that it does not get dropped nor activated forever */
