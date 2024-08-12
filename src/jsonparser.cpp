@@ -42,7 +42,7 @@ void JsonParser::Parse(std::string fileName)
 		
 		printf("Parsing: %s\n", document["channame"].GetString());
 
-		if(document.HasMember("isocode") && document["channame"].IsString())
+		if(document.HasMember("isocode") && document["isocode"].IsString())
 		{
 			if(std::strcmp(document["isocode"].GetString(), "CG") == 0)
 			{
