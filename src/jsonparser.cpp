@@ -38,11 +38,11 @@ void JsonParser::Parse(std::string fileName)
 	rapidjson::Document document;
 	document.ParseStream(isw);
 
-	if (document.HasMember("channame")) {
+	if (document.HasMember("channame") && document["channame"].IsString()) {
 		
 		printf("Parsing: %s\n", document["channame"].GetString());
 
-		if(document.HasMember("isocode"))
+		if(document.HasMember("isocode") && document["channame"].IsString())
 		{
 			if(std::strcmp(document["isocode"].GetString(), "CG") == 0)
 			{
@@ -52,6 +52,11 @@ void JsonParser::Parse(std::string fileName)
 			//note: req. only for v3 file separation
 			//lastIsoCode = document["isocode"].GetString();
 		}
+		else
+ 		{
+ 			std::cout << "ERROR: no isocode. Dropping " << fileName << std::endl;
+ 			return;
+ 		}
 		
 		for (auto& airspace : document["airspaces"].GetArray()) {
 			bool skipAirspace = false;
