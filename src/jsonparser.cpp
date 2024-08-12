@@ -85,7 +85,6 @@ void JsonParser::Parse(std::string fileName)
 			{
 				std::cout << "Switzerland: " << airspace["name"].GetString() << "IGNORE." << std::endl;
 				skipAirspace = true;
-				continue;
 			}
 
 			/*
@@ -154,8 +153,8 @@ void JsonParser::Parse(std::string fileName)
 
 		if(airspaceName == "AUSTRIAN BORDER")
 		{
-							std::cout << "Found AT border skipping: " << airspaceName << std::endl;
-							skipAirspace = true;
+			std::cout << "Found AT border skipping: " << airspaceName << std::endl;
+			skipAirspace = true;
 		}
 
 		if (skipAirspace and isWlProt == false)
