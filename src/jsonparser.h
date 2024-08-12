@@ -27,6 +27,8 @@ private:
 
 	time_t ParseTime(std::string& time);
 	
+	bool isWildlifeProtection(rapidjson::Document &document);
+
 	double SetAirspaceLimits(OAB& tempAirspace, rapidjson::Value& airspace, AirspaceLimit limit);
 	void SetAirspaceClass(OAB& tempAirspace, rapidjson::Value& airspace);
 	void SetAirspaceName(OAB& tempAirspace, rapidjson::Value& airspace);

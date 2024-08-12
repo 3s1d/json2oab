@@ -30,6 +30,17 @@ JsonParser::~JsonParser()
 {
 }
 
+bool JsonParser::isWildlifeProtection(rapidjson::Document &document)
+{
+	if (document.HasMember("name") == false or document["name"].IsString() == false)
+		return false;
+
+	const char* cstr = document["name"].GetString();
+	std::string str(cstr);
+    return str.find("Schutzzone") != std::string::npos or
+    		str.find("Wildlife Protection") != std::string::npos;
+}
+
 void JsonParser::Parse(std::string fileName)
 {
 	boost::filesystem::ifstream ifs(fileName);
@@ -38,89 +49,52 @@ void JsonParser::Parse(std::string fileName)
 	rapidjson::Document document;
 	document.ParseStream(isw);
 
-	if (document.HasMember("channame") && document["channame"].IsString()) {
-		
-		printf("Parsing: %s\n", document["channame"].GetString());
+	if (document.HasMember("channame") == false or document["channame"].IsString() == false)
+	{
+		std::cerr << "ERROR: Channame does not exist." << std::endl;
+		return;
+	}
 
-		if(document.HasMember("isocode") && document["isocode"].IsString())
-		{
-			if(std::strcmp(document["isocode"].GetString(), "CG") == 0)
-			{
-				std::cout << "Dropping " << fileName << std::endl;
-				return;
-			}
+	const bool isWlProt = isWildlifeProtection(document);
 
-			lastIsoCode = document["isocode"].GetString();
-		}
-		else
+	printf("Parsing: %s (%s%s)\n", document["channame"].GetString(), fileName.c_str(), isWlProt ? " ,Wildlife Protection" : "");
+
+	if(document.HasMember("isocode") && document["isocode"].IsString())
+	{
+		if(std::strcmp(document["isocode"].GetString(), "CG") == 0)
 		{
-			std::cout << "ERROR: no isocode. Dropping " << fileName << std::endl;
+			std::cout << "Dropping " << fileName << std::endl;
 			return;
 		}
 
-		for (auto& airspace : document["airspaces"].GetArray()) {
-			bool skipAirspace = false;
-			
-			if (boost::iequals(document["channame"].GetString(), "Switzerland"))
+		lastIsoCode = document["isocode"].GetString();
+	}
+	else
+	{
+		std::cerr << "ERROR: no isocode. Dropping " << fileName << std::endl;
+		return;
+	}
+
+	for (auto& airspace : document["airspaces"].GetArray())
+	{
+		bool skipAirspace = false;
+
+		if (boost::iequals(document["channame"].GetString(), "Switzerland"))
+		{
+			if (airspace.HasMember("airchecktype") and boost::iequals(airspace["airchecktype"].GetString(), "ignore"))
 			{
-				if (airspace.HasMember("airchecktype"))
-				{
-					if (boost::iequals(airspace["airchecktype"].GetString(), "ignore")) {
+				std::cout << "Switzerland: " << airspace["name"].GetString() << "IGNORE." << std::endl;
+				skipAirspace = true;
+				continue;
+			}
 
-						std::cout << "Switzerland: " << airspace["name"].GetString() << "IGNORE." << std::endl;
-						skipAirspace = true;
-						continue;
-					}
-				}
-
-				/*
-				 * exclude DABS from CH if no activations are known
-				 * "descriptions": [{"airlanguage": "en", "airdescription": "Mil Radar\r\nTYPE:Q\r\nDABS activated\r\n"}],
-				 * "activations": [],
-				 */
+			/*
+			 * exclude DABS from CH if no activations are known
+			 * "descriptions": [{"airlanguage": "en", "airdescription": "Mil Radar\r\nTYPE:Q\r\nDABS activated\r\n"}],
+			 * "activations": [],
+			 */
 //tbr
 /*
-				if (airspace.HasMember("descriptions"))
-				{
-					for (auto& description : airspace["descriptions"].GetArray())
-					{
-						if (description.HasMember("airdescription"))
-						{
-							std::string airDescription = description["airdescription"].GetString();
-
-							if(airDescription.find("DABS activated") != std::string::npos)
-							{
-								if(airspace.HasMember("activations") == false or airspace["activations"].GetArray().Empty())
-								{
-									std::cout << "Found DABS w/o actTime skipping: " << airspace["name"].GetString() << std::endl;
-									skipAirspace = true;
-									break;
-								}
-							}
-						}
-					}
-				}
-*/
-			}
-			
-			OAB tempSpace;
-			std::string airspaceName = airspace["name"].GetString();
-
-			if (airspaceName.find("NOTAM") != std::string::npos and
-					airspaceName.find("ED-R137B") == std::string::npos)					//Hohenfels dauer NOTAM?
-			{
-				std::cout << "Found Notam skipping: " << airspaceName << std::endl;
-				skipAirspace = true;
-				continue;
-			}
-
-			if (boost::starts_with(airspaceName, "FIS"))
-			{
-				std::cout << "Found FIS skipping: " << airspaceName << std::endl;
-				skipAirspace = true;
-				continue;
-			}
-
 			if (airspace.HasMember("descriptions"))
 			{
 				for (auto& description : airspace["descriptions"].GetArray())
@@ -129,60 +103,94 @@ void JsonParser::Parse(std::string fileName)
 					{
 						std::string airDescription = description["airdescription"].GetString();
 
-						if (boost::regex_match(airDescription, notamExpr))
+						if(airDescription.find("DABS activated") != std::string::npos)
 						{
-							std::cout << "Found Notam skipping: " << airspaceName << std::endl;
-							skipAirspace = true;
-							break;
+							if(airspace.HasMember("activations") == false or airspace["activations"].GetArray().Empty())
+							{
+								std::cout << "Found DABS w/o actTime skipping: " << airspace["name"].GetString() << std::endl;
+								skipAirspace = true;
+								break;
+							}
 						}
 					}
 				}
 			}
-
-			if(airspaceName == "AUSTRIAN BORDER")
-			{
-                                std::cout << "Found AT border skipping: " << airspaceName << std::endl;
-                                skipAirspace = true;
-                                continue;
-			}
-
-			if (skipAirspace)
-			{
-				continue;
-			}
-
-			/* Air ID */
-			if (airspace.HasMember("airid"))
-				tempSpace.header.airid = airspace["airid"].GetUint();
-			else
-				tempSpace.header.airid = 0;
-
-			tempSpace.header.type = OAB::UNDEFINED;
-			SetAirspaceName(tempSpace, airspace);
-			SetAirspaceClass(tempSpace, airspace);
-			double lowerAltitude = SetAirspaceLimits(tempSpace, airspace, AirspaceLimit::LowerLimit);
-			double upperAltitude = SetAirspaceLimits(tempSpace, airspace, AirspaceLimit::UpperLimit);
-			SetAirspacePolygons(tempSpace, airspace["polygon"]);
-			SetAirspceActivations(tempSpace, airspace);
-
-			if (tempSpace.header.type == OAB::IGNORE)
-				continue;
-
-			
-			kmlCreator.AddAirspace(document["channame"].GetString(),
-				document["description"].IsNull() ? "" : document["description"].GetString(),
-				airspace, tempPolygoneCoordinates, lowerAltitude / 3.2808, upperAltitude/ 3.2808,
-				tempSpace.altitudeBottomAlt_ft != -1 ? (tempSpace.altitudeBottomAlt_ft / 3.2808) : -1,
-				tempSpace.altitudeTopAlt_ft != -1 ? (tempSpace.altitudeTopAlt_ft / 3.2808) : -1);
-
-			airspaces.push_back(tempSpace);
+*/
 		}
+
+		OAB tempSpace;
+		std::string airspaceName = airspace["name"].GetString();
+
+		if (airspaceName.find("NOTAM") != std::string::npos and
+				airspaceName.find("ED-R137B") == std::string::npos)					//Hohenfels dauer NOTAM?
+		{
+			std::cout << "Found Notam skipping: " << airspaceName << std::endl;
+			skipAirspace = true;
+		}
+
+		if (boost::starts_with(airspaceName, "FIS"))
+		{
+			std::cout << "Found FIS skipping: " << airspaceName << std::endl;
+			skipAirspace = true;
+		}
+
+		if (airspace.HasMember("descriptions"))
+		{
+			for (auto& description : airspace["descriptions"].GetArray())
+			{
+				if (description.HasMember("airdescription"))
+				{
+					std::string airDescription = description["airdescription"].GetString();
+
+					if (boost::regex_match(airDescription, notamExpr))
+					{
+						std::cout << "Found Notam skipping: " << airspaceName << std::endl;
+						skipAirspace = true;
+						break;
+					}
+				}
+			}
+		}
+
+		if(airspaceName == "AUSTRIAN BORDER")
+		{
+							std::cout << "Found AT border skipping: " << airspaceName << std::endl;
+							skipAirspace = true;
+		}
+
+		if (skipAirspace and isWlProt == false)
+			continue;
+
+		/* Air ID */
+		if (airspace.HasMember("airid"))
+			tempSpace.header.airid = airspace["airid"].GetUint();
+		else
+			tempSpace.header.airid = 0;
+
+		tempSpace.header.type = OAB::UNDEFINED;
+		SetAirspaceName(tempSpace, airspace);
+		if(isWlProt)
+			SetAirspaceClass(tempSpace, airspace);
+		else
+			tempSpace.header.type = OAB::WILDLIFEPROTECTION;
+
+		const double lowerAltitude = SetAirspaceLimits(tempSpace, airspace, AirspaceLimit::LowerLimit);
+		const double upperAltitude = SetAirspaceLimits(tempSpace, airspace, AirspaceLimit::UpperLimit);
+		SetAirspacePolygons(tempSpace, airspace["polygon"]);
+		SetAirspceActivations(tempSpace, airspace);
+
+		if(tempSpace.header.type == OAB::IGNORE)
+			continue;
+
+		kmlCreator.AddAirspace(document["channame"].GetString(),
+			document["description"].IsNull() ? "" : document["description"].GetString(),
+			airspace, tempPolygoneCoordinates, lowerAltitude / 3.2808, upperAltitude/ 3.2808,
+			tempSpace.altitudeBottomAlt_ft != -1 ? (tempSpace.altitudeBottomAlt_ft / 3.2808) : -1,
+			tempSpace.altitudeTopAlt_ft != -1 ? (tempSpace.altitudeTopAlt_ft / 3.2808) : -1);
+
+		airspaces.push_back(tempSpace);
 	}
-	else
-	{
-		std::cerr << "Channame does not exist." << std::endl;
-		exit(EXIT_FAILURE);
-	}
+
 }
 
 void JsonParser::SetAirspaceClass(OAB & tempAirspace, rapidjson::Value& airspace)

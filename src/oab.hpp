@@ -132,6 +132,7 @@ public:
 		GLIDING = 'g',
 		NOGLIDER = 'n',
 		WAVE = 'W',
+		WILDLIFEPROTECTION = 'w',
 		UNKNOWN = '?', 			// "UNKNOWN" can be used in OpenAir files
 		UNDEFINED = '?',		// also the last one
 		IGNORE = '-'
