@@ -38,11 +38,11 @@ void JsonParser::Parse(std::string fileName)
 	rapidjson::Document document;
 	document.ParseStream(isw);
 
-	if (document.HasMember("channame")) {
+	if (document.HasMember("channame") && document["channame"].IsString()) {
 		
 		printf("Parsing: %s\n", document["channame"].GetString());
 
-		if(document.HasMember("isocode"))
+		if(document.HasMember("isocode") && document["isocode"].IsString())
 		{
 			if(std::strcmp(document["isocode"].GetString(), "CG") == 0)
 			{
@@ -52,7 +52,12 @@ void JsonParser::Parse(std::string fileName)
 
 			lastIsoCode = document["isocode"].GetString();
 		}
-		
+		else
+		{
+			std::cout << "ERROR: no isocode. Dropping " << fileName << std::endl;
+			return;
+		}
+
 		for (auto& airspace : document["airspaces"].GetArray()) {
 			bool skipAirspace = false;
 			
@@ -101,7 +106,8 @@ void JsonParser::Parse(std::string fileName)
 			OAB tempSpace;
 			std::string airspaceName = airspace["name"].GetString();
 
-			if (airspaceName.find("NOTAM") != std::string::npos)
+			if (airspaceName.find("NOTAM") != std::string::npos and
+					airspaceName.find("ED-R137B") == std::string::npos)					//Hohenfels dauer NOTAM?
 			{
 				std::cout << "Found Notam skipping: " << airspaceName << std::endl;
 				skipAirspace = true;
