@@ -168,7 +168,7 @@ void JsonParser::Parse(std::string fileName)
 
 		tempSpace.header.type = OAB::UNDEFINED;
 		SetAirspaceName(tempSpace, airspace);
-		if(isWlProt)
+		if(isWlProt == false)
 			SetAirspaceClass(tempSpace, airspace);
 		else
 			tempSpace.header.type = OAB::WILDLIFEPROTECTION;
