@@ -123,13 +123,13 @@ void JsonParser::Parse(std::string fileName)
 		if (airspaceName.find("NOTAM") != std::string::npos and
 				airspaceName.find("ED-R137B") == std::string::npos)					//Hohenfels dauer NOTAM?
 		{
-			std::cout << "Found Notam skipping: " << airspaceName << std::endl;
+			//std::cout << "Found Notam skipping: " << airspaceName << std::endl;
 			skipAirspace = true;
 		}
 
 		if (boost::starts_with(airspaceName, "FIS"))
 		{
-			std::cout << "Found FIS skipping: " << airspaceName << std::endl;
+			//std::cout << "Found FIS skipping: " << airspaceName << std::endl;
 			skipAirspace = true;
 		}
 
@@ -143,7 +143,7 @@ void JsonParser::Parse(std::string fileName)
 
 					if (boost::regex_match(airDescription, notamExpr))
 					{
-						std::cout << "Found Notam skipping: " << airspaceName << std::endl;
+						//std::cout << "Found Notam skipping: " << airspaceName << std::endl;
 						skipAirspace = true;
 						break;
 					}
@@ -345,7 +345,7 @@ double JsonParser::SetAirspaceLimits(OAB & tempAirspace, rapidjson::Value & airs
 		{
 			if(altitudeFt > INT16_MAX)										//altitudes > 32000ft should use FL anyway
 			{
-				std::cout << "Faking AMSL by FL" << std::endl;
+				//std::cout << "Faking AMSL by FL" << std::endl;
 				altref = OAB_ALTREF_FL;
 				altitudeFt = altitudeFt / 100;
 				returnAltitudeFeet = altitudeFt;							//re'set as it may have been trunked
@@ -504,21 +504,13 @@ bool JsonParser::WriteOab(std::string fileName, std::ofstream *otbStream)
 		return true;
 	}
 
-	/* split file */
-	if(endsWith(fileName, ".oab") == false)
-		fileName = fileName + "/" + lastIsoCode + ".oab";
-
-	/* detect existing file */
-	struct stat buffer;
-	bool fileExists = stat(fileName.c_str(), &buffer) == 0;
-
 	/* additional header */
 	uint16_t numAsp = airspaces.size();
 	OAB::bb_t bb;
 	bb.topLat_rad = -M_PI;
 	bb.bottomLat_rad = M_PI;
-	bb.leftLon_rad =  M_2_PI;
-	bb.rightLon_rad = -M_PI_2;
+	bb.leftLon_rad =  M_PI*2;
+	bb.rightLon_rad = -M_PI*2;
 	for(auto &asp : airspaces)
 	{
 		for(auto &pt : asp.polygon)
@@ -534,54 +526,142 @@ bool JsonParser::WriteOab(std::string fileName, std::ofstream *otbStream)
 		}
 	}
 
-	/* open */
-	std::fstream myFile(fileName, fileExists ? (std::ios::in | std::ios::out | std::ios::binary) : (std::ios::out | std::ios::binary) );
-	if(fileExists == false)
+	/* detect longitude overflow */
+	const bool lonOverflow = bb.rightLon_rad - bb.leftLon_rad > M_PI and bb.rightLon_rad > 0.0f and bb.leftLon_rad < 0.0f;
+	if(lonOverflow)
+		std::cout << "Splitting " << lastIsoCode << std::endl;
+
+	//printf("BB %s: lat%.f,%.f - lon%.f,%.f (%d)\n", lastIsoCode.c_str(),
+	//	rad2deg(bb.topLat_rad), rad2deg(bb.bottomLat_rad), rad2deg(bb.leftLon_rad), rad2deg(bb.rightLon_rad), lonOverflow);
+
+
+	for(int i=0; i <= !!lonOverflow; i++)
 	{
-		OAB::writeFileHeader(myFile, bb, airspaces.size());
-	}
-	else
-	{
-		OAB::bb_t bbExist;
-		uint16_t numAspExist;
-		if(OAB::readFileHeader(myFile, bbExist, numAspExist) == false)
+		/* reiterate boundingbox */
+		//note: i=0 -> negative longitudes, i=1 -> positive longitudes
+		if(lonOverflow)
 		{
-			std::cerr << "Unable to read header" << std::endl;
-			myFile.close();
-			return false;
+			numAsp = 0;
+			bb.topLat_rad = -M_PI;
+			bb.bottomLat_rad = M_PI;
+			bb.leftLon_rad =  M_PI*2;
+			bb.rightLon_rad = -M_PI*2;
+
+			for(auto &asp : airspaces)
+			{
+				/* first polygon point decides where to go */
+				if(i == 0 and asp.polygon[0].lon_rad > 0.0f)
+					 continue;
+				else if(i == 1 and asp.polygon[0].lon_rad < 0.0f)
+					continue;
+				else if(i > 1)
+					std::cerr << "BB split error!!" << std::endl;
+
+				for(auto &pt : asp.polygon)
+				{
+					if(pt.lat_rad > bb.topLat_rad)
+						bb.topLat_rad = pt.lat_rad;
+					if(pt.lat_rad < bb.bottomLat_rad)
+						bb.bottomLat_rad = pt.lat_rad;
+					if(pt.lon_rad > bb.rightLon_rad)
+						bb.rightLon_rad = pt.lon_rad;
+					if(pt.lon_rad < bb.leftLon_rad)
+						bb.leftLon_rad = pt.lon_rad;
+				}
+
+				numAsp++;
+			}
+
+			printf("BBsplit %s: lat%.f,%.f - lon%.f,%.f (%d)\n", lastIsoCode.c_str(),
+				rad2deg(bb.topLat_rad), rad2deg(bb.bottomLat_rad), rad2deg(bb.leftLon_rad), rad2deg(bb.rightLon_rad), lonOverflow);
+
 		}
 
-		numAsp += numAspExist;
-		if(bbExist.topLat_rad > bb.topLat_rad)
-			bb.topLat_rad = bbExist.topLat_rad;
-		if(bbExist.bottomLat_rad < bb.bottomLat_rad)
-			bb.bottomLat_rad = bbExist.bottomLat_rad;
-		if(bbExist.rightLon_rad > bb.rightLon_rad)
-			bb.rightLon_rad = bbExist.rightLon_rad;
-		if(bbExist.leftLon_rad < bb.leftLon_rad)
-			bb.leftLon_rad = bbExist.leftLon_rad;
+		/* split file */
+		std::string fName;
+		if(endsWith(fileName, ".oab") == false)
+		{
+			if(lonOverflow and i == 0)
+				fName = fileName + "/" + lastIsoCode + "_w.oab";
+			else if(lonOverflow and i == 1)
+				fName = fileName + "/" + lastIsoCode + "_e.oab";
+			else
+				fName = fileName + "/" + lastIsoCode + ".oab";
+		}
+		else
+		{
+		    if (lonOverflow and i == 0)
+		        fName = fileName.substr(0, fileName.size() - 4) + "_w.oab";
+		    else if (lonOverflow and i == 1)
+		        fName = fileName.substr(0, fileName.size() - 4) + "_e.oab";
+		    else
+		        fName = fileName;
+		}
 
-		/* update header */
-		myFile.seekp(0, std::ios::beg);
-		OAB::writeFileHeader(myFile, bb, numAsp);
+		/* detect existing file */
+		struct stat buffer;
+		bool fileExists = stat(fName.c_str(), &buffer) == 0;
 
-		myFile.seekp(0, std::ios::end);
-		std::cout<< "(continued)" << std::endl;
+		/* open */
+		uint16_t numAspExist = 0;
+		std::fstream myFile(fName, fileExists ? (std::ios::in | std::ios::out | std::ios::binary) : (std::ios::out | std::ios::binary) );
+		if(fileExists == false)
+		{
+			OAB::writeFileHeader(myFile, bb, numAsp);
+		}
+		else
+		{
+			OAB::bb_t bbExist;
+			if(OAB::readFileHeader(myFile, bbExist, numAspExist) == false)
+			{
+				std::cerr << "Unable to read header" << std::endl;
+				myFile.close();
+				return false;
+			}
+
+			numAsp += numAspExist;
+			if(bbExist.topLat_rad > bb.topLat_rad)
+				bb.topLat_rad = bbExist.topLat_rad;
+			if(bbExist.bottomLat_rad < bb.bottomLat_rad)
+				bb.bottomLat_rad = bbExist.bottomLat_rad;
+			if(bbExist.rightLon_rad > bb.rightLon_rad)
+				bb.rightLon_rad = bbExist.rightLon_rad;
+			if(bbExist.leftLon_rad < bb.leftLon_rad)
+				bb.leftLon_rad = bbExist.leftLon_rad;
+
+			/* update header */
+			myFile.seekp(0, std::ios::beg);
+			OAB::writeFileHeader(myFile, bb, numAsp);
+
+			myFile.seekp(0, std::ios::end);
+			std::cout<< "(continued)" << std::endl;
+		}
+
+		/* sort airspaces */
+		sort(airspaces.begin(), airspaces.end(), [](const OAB &lhs, const OAB &rhs) { return lhs.header.airid < rhs.header.airid; });
+
+		/* write airspaces */
+		for (auto &asp : airspaces)
+		{
+			/* first polygon point decides where to go */
+			if(lonOverflow)
+			{
+				if(i == 0 and asp.polygon[0].lon_rad > 0.0f)
+					 continue;
+				else if(i == 1 and asp.polygon[0].lon_rad < 0.0f)
+					continue;
+				else if(i > 1)
+					std::cerr << "BB split error!!" << std::endl;
+			}
+
+			asp.write(myFile, otbStream == nullptr);
+			if(otbStream != nullptr)
+				asp.writeActivations(otbStream);
+		}
+
+		myFile.close();
+		std::cout << (fileExists ? "Appended " : "Written ") << numAsp-numAspExist << " airspaces (" << numAsp << " total)" << std::endl;
 	}
-
-	/* sort airspaces */
-	sort(airspaces.begin(), airspaces.end(), [](const OAB &lhs, const OAB &rhs) { return lhs.header.airid < rhs.header.airid; });
-
-	/* write airspaces */
-	for (auto &airspace : airspaces)
-	{
-		airspace.write(myFile, otbStream == nullptr);
-		if(otbStream != nullptr)
-			airspace.writeActivations(otbStream);
-	}
-
-	myFile.close();
-	std::cout << (fileExists? "Appended " : "Written ") << airspaces.size() << " airspaces (" << numAsp << " total)" << std::endl;
 
 	/* cleanup */
 	airspaces.clear();
