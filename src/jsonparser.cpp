@@ -527,7 +527,9 @@ bool JsonParser::WriteOab(std::string fileName, std::ofstream *otbStream)
 	}
 
 	/* detect longitude overflow */
-	const bool lonOverflow = bb.rightLon_rad - bb.leftLon_rad > M_PI and bb.rightLon_rad > 0.0f and bb.leftLon_rad < 0.0f;
+	const bool lonOverflow = bb.rightLon_rad - bb.leftLon_rad > M_PI and
+			bb.rightLon_rad > 0.0f and bb.leftLon_rad < 0.0f and
+			fileName.find("world") == std::string::npos;
 	if(lonOverflow)
 		std::cout << "Splitting " << lastIsoCode << std::endl;
 
