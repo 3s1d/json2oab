@@ -572,8 +572,8 @@ bool JsonParser::WriteOab(std::string fileName, std::ofstream *otbStream)
 				numAsp++;
 			}
 
-			printf("BBsplit %s: lat%.f,%.f - lon%.f,%.f (%d)\n", lastIsoCode.c_str(),
-				rad2deg(bb.topLat_rad), rad2deg(bb.bottomLat_rad), rad2deg(bb.leftLon_rad), rad2deg(bb.rightLon_rad), lonOverflow);
+			printf("BBsplit %s: lat%.f,%.f - lon%.f,%.f\n", lastIsoCode.c_str(),
+				rad2deg(bb.topLat_rad), rad2deg(bb.bottomLat_rad), rad2deg(bb.leftLon_rad), rad2deg(bb.rightLon_rad));
 
 		}
 
