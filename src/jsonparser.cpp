@@ -388,10 +388,11 @@ double JsonParser::SetAirspaceLimits(OAB & tempAirspace, rapidjson::Value & airs
 			exit(EXIT_FAILURE);
 		}
 
+		/* limit altitude */
 		if(altitudeFt > INT16_MAX)
 		{
-			std::cerr << "altitude too big" << std::endl;
-			exit(EXIT_FAILURE);
+			std::wcerr << "altitude too big " << altitudeFt << std::endl;
+			altitudeFt = INT16_MAX - 1;
 		}
 
 		return returnAltitudeFeet;
