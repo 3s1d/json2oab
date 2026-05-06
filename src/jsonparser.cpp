@@ -120,6 +120,12 @@ void JsonParser::Parse(std::string fileName)
 		OAB tempSpace;
 		std::string airspaceName = airspace["name"].GetString();
 
+		if (airspace.HasMember("foreignisocode") && !airspace["foreignisocode"].IsNull())
+		{
+			std::cout << "Foreign airspace skipping: " << airspaceName << " (foreign=" << airspace["foreignisocode"].GetString() << ", local=" << lastIsoCode << ")" << std::endl;
+			skipAirspace = true;
+		}
+
 		if (airspaceName.find("NOTAM") != std::string::npos and
 				airspaceName.find("ED-R137B") == std::string::npos)					//Hohenfels dauer NOTAM?
 		{
