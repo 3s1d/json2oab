@@ -126,11 +126,23 @@ void JsonParser::Parse(std::string fileName)
 			skipAirspace = true;
 		}
 
-		if (airspaceName.find("NOTAM") != std::string::npos and
-				airspaceName.find("ED-R137B") == std::string::npos)					//Hohenfels dauer NOTAM?
+		if (airspaceName.find("NOTAM") != std::string::npos)
 		{
-			//std::cout << "Found Notam skipping: " << airspaceName << std::endl;
-			skipAirspace = true;
+			bool isException = false;
+			for (const auto& exception : notamNameExceptions)
+			{
+				if (airspaceName.find(exception) != std::string::npos)
+				{
+					isException = true;
+					break;
+				}
+			}
+
+			if (!isException)
+			{
+				//std::cout << "Found Notam skipping: " << airspaceName << std::endl;
+				skipAirspace = true;
+			}
 		}
 
 		if (boost::starts_with(airspaceName, "FIS"))

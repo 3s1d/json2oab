@@ -23,6 +23,14 @@ private:
 	enum class AirspaceLimit {UpperLimit, LowerLimit};
 	boost::regex notamExpr{ ".+/\\d+\\s+NOTAM.+" };
 
+	// Airspaces whose name contains "NOTAM" but that are actually permanent/duration
+	// restrictions and must NOT be skipped by the NOTAM filter below. Matched as a
+	// name prefix/substring since the ID suffix varies (e.g. "_2", "B" vs "C").
+	std::vector<std::string> notamNameExceptions{
+		"EDR137",		//Hohenfels dauer NOTAM (was ED-R137B, now seen as EDR137B_2 / EDR137C_2)
+		"EDR132",		//Heuberg dauer NOTAM (EDR132B)
+	};
+
 	string lastIsoCode = string();
 
 	time_t ParseTime(std::string& time);
